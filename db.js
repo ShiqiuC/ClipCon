@@ -22,22 +22,39 @@ function getDb() {
 }
 
 async function getDataFromCloud(currentPage) {
+  const itemsPerPage = 10;
+  const itemsOffSet = (currentPage - 1) * itemsPerPage;
+  let totalCount, totalPages, items;
+
   try {
-    const itemsPerPage = 10;
-    const itemsOffSet = (currentPage - 1) * itemsPerPage;
-    const db = getDb();
+    const db = getDb(); // 假设getDb()已正确配置并可以返回数据库实例
     const collection = db.collection("clipboardHistory");
-    // 使用 await 等待异步操作完成
-    const data = await collection
+
+    // 首先获取总条目数
+    totalCount = await collection.countDocuments();
+
+    // 计算总页数
+    totalPages = Math.ceil(totalCount / itemsPerPage);
+
+    // 然后根据当前页码获取具体的条目
+    items = await collection
       .find()
       .sort({ time: -1 })
       .skip(itemsOffSet)
       .limit(itemsPerPage)
       .toArray();
-    console.log(data);
+
+    // 返回与getDataFromSqlite相同结构的对象
+    return {
+      totalCount,
+      totalPages,
+      items,
+      currentPage,
+    };
   } catch (error) {
     console.error("Error fetching data from cloud:", error);
-    // 处理错误或者根据需求进行相应的错误反馈
+    // 如果有必要，这里可以抛出错误或者返回一个错误对象
+    throw error;
   }
 }
 

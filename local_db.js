@@ -78,7 +78,45 @@ async function getDataFromSqlite(currentPage) {
   };
 }
 
+async function insertClipboardContentToLocalDB(uuid, clipboardContent) {
+  // 假设 db 是一个支持 Promise 的 SQLite3 数据库实例
+  const insertSql = `INSERT INTO clipboard_history (id, content) VALUES (?, ?)`;
+
+  try {
+    // 插入数据
+    await new Promise((resolve, reject) => {
+      db.run(insertSql, [uuid, clipboardContent], function (err) {
+        if (err) {
+          console.error(err.message);
+          reject(err);
+        } else {
+          console.log(`A row has been inserted with id ${uuid}`);
+          resolve();
+        }
+      });
+    });
+
+    // 立即查询插入行的时间戳
+    const querySql = `SELECT * FROM clipboard_history WHERE id = ?`;
+    const row = await new Promise((resolve, reject) => {
+      db.get(querySql, [uuid], (err, row) => {
+        if (err) {
+          console.error(err.message);
+          reject(err);
+        } else {
+          resolve(row);
+        }
+      });
+    });
+
+    return row;
+  } catch (error) {
+    console.error(error);
+  }
+}
+
 module.exports = {
   initLocalDb,
   getDataFromSqlite,
+  insertClipboardContentToLocalDB,
 };

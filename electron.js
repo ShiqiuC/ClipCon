@@ -13,14 +13,20 @@ const {
   getDataFromCloud,
   insertClipboardContentToMongo,
 } = require("./db");
-const { initLocalDb, getDataFromSqlite } = require("./local_db");
+const {
+  initLocalDb,
+  getDataFromSqlite,
+  insertClipboardContentToLocalDB,
+} = require("./local_db");
 
 initLocalDb();
 
 let mainWindow;
+let localData;
+let cloudData;
 
 async function createWindow() {
-  let mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
     webPreferences: {
@@ -32,20 +38,20 @@ async function createWindow() {
 
   mainWindow.webContents.on("did-finish-load", async () => {
     try {
-      const data = await getDataFromSqlite(1);
-      console.log(data); // 成功获取数据后的处理
-      mainWindow.webContents.send("initial-data", data);
+      localData = await getDataFromSqlite(1);
     } catch (error) {
       console.error(error); // 错误处理
     }
 
     // 假设 getDataFromCloud 是另一个异步操作
     try {
-      const cloudData = await getDataFromCloud(1);
+      cloudData = await getDataFromCloud(1);
       // 对 cloudData 进行处理
     } catch (error) {
       console.error(error); // 处理来自云端数据的错误
     }
+
+    mainWindow.webContents.send("initial-data", { localData, cloudData });
   });
 }
 
@@ -53,7 +59,7 @@ let clipboardCheckInterval;
 let clipboardContent = clipboard.readText();
 
 function startClipboardMonitoring() {
-  clipboardCheckInterval = setInterval(() => {
+  clipboardCheckInterval = setInterval(async () => {
     const currentContent = clipboard.readText();
     if (currentContent !== clipboardContent) {
       console.log("剪贴板内容变化:", currentContent);
@@ -61,28 +67,15 @@ function startClipboardMonitoring() {
       clipboardContent = currentContent;
       const uuid = uuidv4(); // 生成 UUID
 
-      // 插入数据
-      const insertSql = `INSERT INTO clipboard_history (id, content) VALUES (?, ?)`;
-      db.run(insertSql, [uuid, clipboardContent], function (err) {
-        if (err) {
-          console.error(err.message);
-        } else {
-          console.log(`A row has been inserted with id ${uuid}`);
-          // 立即查询插入行的时间戳
-          const querySql = `SELECT time FROM clipboard_history WHERE id = ?`;
-          db.get(querySql, [uuid], (err, row) => {
-            if (err) {
-              console.error(err.message);
-            } else {
-              // 使用 UUID 和查询到的时间戳填充渲染内容
-              mainWindow.webContents.send("clipboard-content", {
-                id: uuid,
-                content: clipboardContent,
-                time: row.time,
-              });
-            }
-          });
-        }
+      const row = await insertClipboardContentToLocalDB(uuid, clipboardContent);
+      console.log(row.content);
+      console.log(row.time);
+
+      // 使用 UUID 和查询到的时间戳填充渲染内容
+      mainWindow.webContents.send("clipboard-content", {
+        id: uuid,
+        content: clipboardContent,
+        time: row.time,
       });
     }
   }, 1000); // 每秒检查一次
@@ -105,15 +98,20 @@ app.whenReady().then(async () => {
 
   createWindow();
 
-  ipcMain.on("request-page-data", (event, currentPage) => {
-    getDataFromSqlite(currentPage)
-      .then((data) => {
-        console.log(data); // 这里处理数据
-        mainWindow.webContents.send("initial-data", data);
-      })
-      .catch((error) => {
-        console.error(error); // 处理错误
-      });
+  ipcMain.on("request-page-data", async (event, { page, type }) => {
+    try {
+      console.log(page);
+      console.log(type);
+      if (type == "local") {
+        localData = await getDataFromSqlite(page);
+      }
+      if (type == "cloud") {
+        cloudData = await getDataFromCloud(page);
+      }
+      mainWindow.webContents.send("initial-data", { localData, cloudData });
+    } catch (error) {
+      console.error(error); // 错误处理
+    }
   });
 
   ipcMain.on("request-send-to-clipboard", (event, record) => {

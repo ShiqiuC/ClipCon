@@ -76,12 +76,12 @@ const App = () => {
 
   // 分页改变的处理函数
   const changeLocalPage = (page) => {
-    window.electron.requestPageData(page);
+    window.electron.requestPageData({ page: page, type: "local" });
   };
 
   // 分页改变的处理函数
   const changeCloudPage = (page) => {
-    console.log("here");
+    window.electron.requestPageData({ page: page, type: "cloud" });
   };
 
   const localPaginationProps = {
@@ -90,6 +90,14 @@ const App = () => {
     current: currentLocalPage,
     total: localTotals,
     onChange: changeLocalPage, // 使用定义的函数，而不是this.changePage
+  };
+
+  const cloudPaginationProps = {
+    showTotal: () => `共${cloudTotals}条`,
+    pageSize: 10,
+    current: currentCloudPage,
+    total: cloudTotals,
+    onChange: changeCloudPage, // 使用定义的函数，而不是this.changePage
   };
 
   useEffect(() => {
@@ -117,14 +125,13 @@ const App = () => {
     window.electron.receiveClipboardContent(clipboardCallback);
 
     // 接收初始数据
-    const initialDataCallback = (
-      event,
-      { totalCount, totalPages, items, currentPage }
-    ) => {
-      setLocalData(items);
-      setLocalTotals(totalCount);
-      setCurrentLocalPage(currentPage);
-      // 假设您在这里不需要更新当前页数或总页数
+    const initialDataCallback = (event, { localData, cloudData }) => {
+      setLocalData(localData.items);
+      setLocalTotals(localData.totalCount);
+      setCurrentLocalPage(localData.currentPage);
+      setCloudData(cloudData.items);
+      setCloudTotals(cloudData.totalCount);
+      setCurrentCloudPage(cloudData.currentPage);
     };
 
     window.electron.receiveInitialData(initialDataCallback);
@@ -152,7 +159,15 @@ const App = () => {
     {
       key: "2",
       label: "Cloud Data",
-      children: "Still working",
+      children: (
+        <Table
+          columns={columns}
+          dataSource={cloudData}
+          pagination={cloudPaginationProps}
+          rowKey="_id"
+          className="Table"
+        />
+      ),
     },
   ];
 
