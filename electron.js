@@ -6,76 +6,21 @@ const {
   clipboard,
   ipcMain,
 } = require("electron");
-const sqlite3 = require("sqlite3").verbose();
 const path = require("path");
 const { v4: uuidv4 } = require("uuid");
-const { connectToDatabase, getDb } = require("./db");
+const {
+  connectToDatabase,
+  getDataFromCloud,
+  insertClipboardContentToMongo,
+} = require("./db");
+const { initLocalDb, getDataFromSqlite } = require("./local_db");
 
-const dbPath = path.resolve(__dirname, "clipboard-history.db");
-
-// 创建一个新的数据库实例
-let db = new sqlite3.Database(
-  dbPath,
-  sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE,
-  (err) => {
-    if (err) {
-      console.error(err.message);
-    }
-    console.log("Connected to the SQLite database.");
-  }
-);
-
-// 修改创建表的语句，使 time 字段使用 SQL 时间格式
-db.run(
-  `CREATE TABLE IF NOT EXISTS clipboard_history (id TEXT PRIMARY KEY, content TEXT NOT NULL, time DATETIME DEFAULT CURRENT_TIMESTAMP)`,
-  (err) => {
-    if (err) {
-      console.error(err.message);
-    }
-    console.log("Table created or already exists.");
-  }
-);
-
-function getDataFromSqlite(currentPage) {
-  return new Promise((resolve, reject) => {
-    const itemsPerPage = 10;
-    const itemsOffSet = (currentPage - 1) * itemsPerPage;
-
-    db.get("SELECT COUNT(*) AS count FROM clipboard_history", (err, row) => {
-      if (err) {
-        console.error(err.message);
-        reject(err);
-        return;
-      }
-
-      const totalCount = row.count;
-      const totalPages = Math.ceil(totalCount / itemsPerPage);
-
-      db.all(
-        `SELECT * FROM clipboard_history ORDER BY time DESC LIMIT ${itemsPerPage} OFFSET ${itemsOffSet}`,
-        (err, rows) => {
-          if (err) {
-            console.error(err.message);
-            reject(err);
-            return;
-          }
-          // 成功解析数据并通过Promise返回
-          resolve({
-            totalCount,
-            totalPages,
-            items: rows,
-            currentPage,
-          });
-        }
-      );
-    });
-  });
-}
+initLocalDb();
 
 let mainWindow;
 
-function createWindow() {
-  mainWindow = new BrowserWindow({
+async function createWindow() {
+  let mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
     webPreferences: {
@@ -84,16 +29,23 @@ function createWindow() {
   });
 
   mainWindow.loadURL("http://localhost:5176");
-  mainWindow.webContents.openDevTools();
-  mainWindow.webContents.on("did-finish-load", () => {
-    getDataFromSqlite(1)
-      .then((data) => {
-        console.log(data); // 这里处理数据
-        mainWindow.webContents.send("initial-data", data);
-      })
-      .catch((error) => {
-        console.error(error); // 处理错误
-      });
+
+  mainWindow.webContents.on("did-finish-load", async () => {
+    try {
+      const data = await getDataFromSqlite(1);
+      console.log(data); // 成功获取数据后的处理
+      mainWindow.webContents.send("initial-data", data);
+    } catch (error) {
+      console.error(error); // 错误处理
+    }
+
+    // 假设 getDataFromCloud 是另一个异步操作
+    try {
+      const cloudData = await getDataFromCloud(1);
+      // 对 cloudData 进行处理
+    } catch (error) {
+      console.error(error); // 处理来自云端数据的错误
+    }
   });
 }
 
@@ -138,20 +90,6 @@ function startClipboardMonitoring() {
 
 function stopClipboardMonitoring() {
   clearInterval(clipboardCheckInterval);
-}
-
-async function insertClipboardContentToMongo(content) {
-  try {
-    const db = getDb(); // 获取复用的数据库连接
-    const collection = db.collection("clipboardHistory");
-    const insertResult = await collection.insertOne({
-      content,
-      time: new Date(),
-    });
-    console.log("插入成功:", insertResult.insertedId);
-  } catch (err) {
-    console.error("插入失败:", err);
-  }
 }
 
 function setupGlobalShortcut() {
