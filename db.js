@@ -62,13 +62,29 @@ async function insertClipboardContentToMongo(content) {
   try {
     const db = getDb(); // 获取复用的数据库连接
     const collection = db.collection("clipboardHistory");
+
+    // 执行插入操作
     const insertResult = await collection.insertOne({
       content,
       time: new Date(),
     });
-    console.log("插入成功:", insertResult.insertedId);
+
+    // 检查插入是否成功
+    if (insertResult.acknowledged) {
+      console.log("插入成功:", insertResult.insertedId);
+
+      // 根据插入的ID查询并返回文档的完整内容
+      const insertedDocument = await collection.findOne({
+        _id: insertResult.insertedId,
+      });
+      return insertedDocument; // 返回查询到的文档内容
+    } else {
+      console.error("插入未被确认");
+      return null; // 插入未被确认，返回null
+    }
   } catch (err) {
     console.error("插入失败:", err);
+    throw err; // 当捕获到异常时，重新抛出，以便调用者能够处理异常
   }
 }
 

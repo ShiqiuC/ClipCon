@@ -73,9 +73,12 @@ function startClipboardMonitoring() {
 
       // 使用 UUID 和查询到的时间戳填充渲染内容
       mainWindow.webContents.send("clipboard-content", {
-        id: uuid,
-        content: clipboardContent,
-        time: row.time,
+        type: "local",
+        data: {
+          id: uuid,
+          content: clipboardContent,
+          time: row.time,
+        },
       });
     }
   }, 1000); // 每秒检查一次
@@ -88,7 +91,12 @@ function stopClipboardMonitoring() {
 function setupGlobalShortcut() {
   globalShortcut.register("CommandOrControl+Shift+C", async () => {
     const content = clipboard.readText();
-    await insertClipboardContentToMongo(content); // 使用数据库连接插入数据
+    const insertedDocument = await insertClipboardContentToMongo(content); // 使用数据库连接插入数据
+    // 使用 UUID 和查询到的时间戳填充渲染内容
+    mainWindow.webContents.send("clipboard-content", {
+      type: "cloud",
+      data: insertedDocument,
+    });
   });
 }
 
@@ -100,8 +108,6 @@ app.whenReady().then(async () => {
 
   ipcMain.on("request-page-data", async (event, { page, type }) => {
     try {
-      console.log(page);
-      console.log(type);
       if (type == "local") {
         localData = await getDataFromSqlite(page);
       }

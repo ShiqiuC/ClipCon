@@ -103,23 +103,36 @@ const App = () => {
   useEffect(() => {
     // 接收剪贴板内容的更新
     const clipboardCallback = (event, content) => {
-      console.log(currentLocalPageRef.current);
-      if (currentLocalPageRef.current == 1) {
-        setLocalData((prevData) => {
-          // 如果数组长度达到10，先删除最后一个元素，然后在前面添加新元素
-          if (prevData.length >= 10) {
-            // 删除最后一个元素，并在数组前面插入新内容
-            const newData = prevData.slice(0, 9); // 保留前9个元素
-            return [content, ...newData];
-          } else {
-            // 如果数组长度小于10，直接在前面添加新内容
-            return [content, ...prevData];
-          }
+      if (content.type == "local") {
+        if (currentLocalPageRef.current == 1) {
+          setLocalData((prevData) => {
+            // 如果数组长度达到10，先删除最后一个元素，然后在前面添加新元素
+            if (prevData.length >= 10) {
+              // 删除最后一个元素，并在数组前面插入新内容
+              const newData = prevData.slice(0, 9); // 保留前9个元素
+              return [content.data, ...newData];
+            } else {
+              // 如果数组长度小于10，直接在前面添加新内容
+              return [content.data, ...prevData];
+            }
+          });
+        }
+        setLocalTotals((prevTotals) => {
+          return prevTotals + 1;
         });
       }
-      setLocalTotals((prevTotals) => {
-        return prevTotals + 1;
-      });
+      if (content.type == "cloud") {
+        if (currentCloudPageRef.current == 1) {
+          setCloudData((prevData) => {
+            if (prevData.length >= 10) {
+              const newData = prevData.slice(0, 9);
+              return [content.data, ...newData];
+            } else {
+              return [content.data, ...prevData];
+            }
+          });
+        }
+      }
     };
 
     window.electron.receiveClipboardContent(clipboardCallback);
