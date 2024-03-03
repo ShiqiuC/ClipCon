@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:clip_con/utils/clipboard_utils.dart';
 import 'package:clip_con/utils/local_db_utils.dart';
 import 'package:flutter/material.dart';
 
@@ -29,12 +32,22 @@ class LocalDBDataSource extends DataTableSource {
   Future<void> loadData(int page) async {
     _offset = (page - 1) * _pageSize;
     _data = await _dbUtils.getPaginatedData(page, _pageSize);
-    print(_data.length);
     notifyListeners();
   }
 
   void setWidth(double width) {
     _width = width;
+  }
+
+  void addNewSingleData(Map<String, dynamic> singleData) {
+    if (_offset == 0) {
+      List<Map<String, dynamic>> newData = List.from(_data); // 创建一个新的列表副本
+      newData.insert(0, singleData); // 在新列表中插入数据
+      int end = newData.length >= 10 ? 10 : newData.length;
+      _data = newData.sublist(0, end); // 使用新列表的子列表更新_data
+      _rowCount++;
+    }
+    notifyListeners();
   }
 
   @override
@@ -72,11 +85,24 @@ class LocalDBDataSource extends DataTableSource {
 class _ClipboardTableState extends State<ClipboardTable> {
   final int _rowsPerPage = 10;
   final LocalDBDataSource _dataSource = LocalDBDataSource();
+  late StreamSubscription<Map<String, dynamic>> _clipboardSubscription;
 
   @override
   void initState() {
     super.initState();
+    // 订阅剪贴板变化事件
+    _clipboardSubscription = ClipboardMonitor.onClipboardChanged.listen((data) {
+      print(data);
+      _dataSource.addNewSingleData(data);
+    });
     _dataSource.loadData(1);
+  }
+
+  @override
+  void dispose() {
+    // 取消订阅，避免内存泄漏
+    _clipboardSubscription.cancel();
+    super.dispose();
   }
 
   @override

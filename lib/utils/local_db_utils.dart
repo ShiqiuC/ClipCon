@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:uuid/uuid.dart';
+import 'package:intl/intl.dart';
 
 class LocalDBUtils {
   static Database? _database;
@@ -26,6 +27,7 @@ class LocalDBUtils {
   // 打开/创建数据库
   _initDatabase() async {
     String path = join(await getDatabasesPath(), _databaseName);
+    print(path);
     return await openDatabase(path,
         version: _databaseVersion, onCreate: _onCreate);
   }
@@ -42,15 +44,16 @@ class LocalDBUtils {
   }
 
   // 插入一条数据
-  Future<void> insertContent(String content) async {
+  Future<Map<String, dynamic>> insertContent(String content) async {
     Database db = await instance.database;
     String id = const Uuid().v4(); // 生成UUID
+    String currentTime =
+        DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
     // 不再需要手动设置时间，因为我们使用了DEFAULT CURRENT_TIMESTAMP
-    await db.insert(table, {
-      columnId: id,
-      columnContent: content,
-      // columnTime 已经由SQLite自动处理
-    });
+    int result = await db.insert(
+        table, {columnId: id, columnContent: content, columnTime: currentTime});
+    print(result);
+    return {columnId: id, columnContent: content, columnTime: currentTime};
   }
 
   // 在 LocalDBUtils 类中添加

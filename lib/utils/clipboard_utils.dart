@@ -22,11 +22,25 @@ void startClipboardMonitor() async {
     if (currentClipboardData != lastClipboardData) {
       print('剪贴板内容变化了: $currentClipboardData');
       lastClipboardData = currentClipboardData;
-      await LocalDBUtils.instance.insertContent(lastClipboardData);
+      Map<String, dynamic> insertedRow =
+          await LocalDBUtils.instance.insertContent(lastClipboardData);
+      ClipboardMonitor._clipboardChangeController.add(insertedRow);
     }
   });
 }
 
 void stopClipboardMonitor() {
   _clipboardMonitorTimer?.cancel();
+}
+
+class ClipboardMonitor {
+  static final _clipboardChangeController =
+      StreamController<Map<String, dynamic>>.broadcast();
+
+  static Stream<Map<String, dynamic>> get onClipboardChanged =>
+      _clipboardChangeController.stream;
+
+  static void dispose() {
+    _clipboardChangeController.close();
+  }
 }

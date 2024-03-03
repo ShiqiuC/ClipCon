@@ -2,9 +2,25 @@ import 'package:clip_con/utils/clipboard_utils.dart';
 import 'package:clip_con/widgets/clipboard_table.dart';
 import 'package:flutter/material.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
+import 'package:window_manager/window_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await windowManager.ensureInitialized();
+
+  WindowOptions windowOptions = const WindowOptions(
+      size: Size(800, 710),
+      center: true,
+      backgroundColor: Colors.transparent,
+      skipTaskbar: false,
+      titleBarStyle: TitleBarStyle.normal);
+
+  windowManager.waitUntilReadyToShow(windowOptions, () async {
+    await windowManager.setResizable(false);
+    await windowManager.show();
+    await windowManager.focus();
+  });
+
   await hotKeyManager.unregisterAll();
   startClipboardMonitor();
 
@@ -62,13 +78,50 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  int currentPageIndex = 0;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('TabBar Sample'),
+      bottomNavigationBar: NavigationBar(
+        onDestinationSelected: (int index) {
+          setState(() {
+            currentPageIndex = index;
+          });
+        },
+        indicatorColor: Colors.amber,
+        selectedIndex: currentPageIndex,
+        destinations: const <Widget>[
+          NavigationDestination(
+            selectedIcon: Icon(Icons.archive),
+            icon: Icon(Icons.archive_outlined),
+            label: 'Local',
+          ),
+          NavigationDestination(
+            selectedIcon: Icon(Icons.cloud_sync),
+            icon: Icon(Icons.cloud_sync_outlined),
+            label: 'Cloud',
+          ),
+          NavigationDestination(
+            selectedIcon: Icon(Icons.settings),
+            icon: Icon(Icons.settings_outlined),
+            label: 'Settings',
+          ),
+        ],
       ),
-      body: const ClipboardTable(),
+      body: IndexedStack(
+        index: currentPageIndex,
+        children: const <Widget>[
+          /// Home page
+          ClipboardTable(),
+
+          /// Notifications page
+          Text("Notifications"),
+
+          /// Messages page
+          Text("Messages"),
+        ],
+      ),
     );
   }
 }
