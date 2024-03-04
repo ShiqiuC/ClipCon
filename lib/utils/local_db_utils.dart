@@ -27,7 +27,6 @@ class LocalDBUtils {
   // 打开/创建数据库
   _initDatabase() async {
     String path = join(await getDatabasesPath(), _databaseName);
-    print(path);
     return await openDatabase(path,
         version: _databaseVersion, onCreate: _onCreate);
   }
@@ -50,9 +49,8 @@ class LocalDBUtils {
     String currentTime =
         DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
     // 不再需要手动设置时间，因为我们使用了DEFAULT CURRENT_TIMESTAMP
-    int result = await db.insert(
+    await db.insert(
         table, {columnId: id, columnContent: content, columnTime: currentTime});
-    print(result);
     return {columnId: id, columnContent: content, columnTime: currentTime};
   }
 

@@ -13,6 +13,10 @@ Future<String> getClipboardData() async {
   }
 }
 
+Future<void> setClipboardData(String text) async {
+  await Clipboard.setData(ClipboardData(text: text));
+}
+
 void startClipboardMonitor() async {
   String lastClipboardData = await getClipboardData();
   _clipboardMonitorTimer?.cancel();
@@ -20,7 +24,6 @@ void startClipboardMonitor() async {
       Timer.periodic(const Duration(seconds: 1), (timer) async {
     String currentClipboardData = await getClipboardData();
     if (currentClipboardData != lastClipboardData) {
-      print('剪贴板内容变化了: $currentClipboardData');
       lastClipboardData = currentClipboardData;
       Map<String, dynamic> insertedRow =
           await LocalDBUtils.instance.insertContent(lastClipboardData);

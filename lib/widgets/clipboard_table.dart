@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:clip_con/utils/clipboard_utils.dart';
 import 'package:clip_con/utils/local_db_utils.dart';
+import 'package:clip_con/utils/snack_bar_utils.dart';
 import 'package:flutter/material.dart';
 
 class ClipboardTable extends StatefulWidget {
@@ -44,8 +45,11 @@ class LocalDBDataSource extends DataTableSource {
   int _offset = 0;
   double _width = 0;
   final void Function(String content) showFullContentDialog;
+  final void Function(String successContent) showSuccessSnackBar;
 
-  LocalDBDataSource({required this.showFullContentDialog}) {
+  LocalDBDataSource(
+      {required this.showFullContentDialog,
+      required this.showSuccessSnackBar}) {
     _fetchRowCount();
   }
 
@@ -84,11 +88,11 @@ class LocalDBDataSource extends DataTableSource {
     final item = _data[index];
     return DataRow.byIndex(index: index, cells: [
       DataCell(SizedBox(
-        width: _width * 0.2,
+        width: _width * 0.20,
         child: Text(item[LocalDBUtils.columnTime]),
       )),
       DataCell(SizedBox(
-        width: _width * 0.6,
+        width: _width * 0.45,
         child: Tooltip(
             message: item[LocalDBUtils.columnContent],
             child: InkWell(
@@ -101,6 +105,21 @@ class LocalDBDataSource extends DataTableSource {
               ),
             )),
       )),
+      DataCell(SizedBox(
+          width: _width * 0.1,
+          child: TextButton(
+            onPressed: () async {
+              await setClipboardData(item[LocalDBUtils.columnContent]);
+              showSuccessSnackBar("Copied to clipboard");
+            },
+            child: const Row(
+              children: <Widget>[
+                Icon(Icons.content_copy, size: 16.0), // 添加图标，设置合适的大小
+                SizedBox(width: 4.0), // 在图标和文本之间添加一些间距
+                Text('Copy'), // 按钮文本
+              ],
+            ),
+          )))
     ]);
   }
 
@@ -122,12 +141,16 @@ class _ClipboardTableState extends State<ClipboardTable> {
   @override
   void initState() {
     super.initState();
-    _dataSource = LocalDBDataSource(showFullContentDialog: (String content) {
-      _showFullContentDialog(context, content);
-    });
+    _dataSource = LocalDBDataSource(
+      showFullContentDialog: (String content) {
+        _showFullContentDialog(context, content);
+      },
+      showSuccessSnackBar: (successContent) {
+        showSuccessSnackBar(context, successContent, 2);
+      },
+    );
     // 订阅剪贴板变化事件
     _clipboardSubscription = ClipboardMonitor.onClipboardChanged.listen((data) {
-      print(data);
       _dataSource.addNewSingleData(data);
     });
     _dataSource.loadData(1);
@@ -150,6 +173,7 @@ class _ClipboardTableState extends State<ClipboardTable> {
       columns: const [
         DataColumn(label: Text('Time')),
         DataColumn(label: Text('Content')),
+        DataColumn(label: Text('Action'))
       ],
       source: _dataSource,
       onPageChanged: (pageIndex) {
