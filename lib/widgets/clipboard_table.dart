@@ -11,6 +11,31 @@ class ClipboardTable extends StatefulWidget {
   State<ClipboardTable> createState() => _ClipboardTableState();
 }
 
+void _showFullContentDialog(BuildContext context, String content) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text('Full Content'),
+        content: SingleChildScrollView(
+          child: SelectableText(content),
+        ),
+        actions: <Widget>[
+          TextButton(
+            child: const Text('Close'),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+          ),
+        ],
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(6),
+        ),
+      );
+    },
+  );
+}
+
 class LocalDBDataSource extends DataTableSource {
   final LocalDBUtils _dbUtils = LocalDBUtils.instance;
   List<Map<String, dynamic>> _data = [];
@@ -18,8 +43,9 @@ class LocalDBDataSource extends DataTableSource {
   final int _pageSize = 10;
   int _offset = 0;
   double _width = 0;
+  final void Function(String content) showFullContentDialog;
 
-  LocalDBDataSource() {
+  LocalDBDataSource({required this.showFullContentDialog}) {
     _fetchRowCount();
   }
 
@@ -63,11 +89,17 @@ class LocalDBDataSource extends DataTableSource {
       )),
       DataCell(SizedBox(
         width: _width * 0.6,
-        child: Text(
-          item[LocalDBUtils.columnContent],
-          overflow: TextOverflow.ellipsis,
-          maxLines: 1,
-        ),
+        child: Tooltip(
+            message: item[LocalDBUtils.columnContent],
+            child: InkWell(
+              onTap: () =>
+                  showFullContentDialog(item[LocalDBUtils.columnContent]),
+              child: Text(
+                item[LocalDBUtils.columnContent],
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+            )),
       )),
     ]);
   }
@@ -84,12 +116,15 @@ class LocalDBDataSource extends DataTableSource {
 
 class _ClipboardTableState extends State<ClipboardTable> {
   final int _rowsPerPage = 10;
-  final LocalDBDataSource _dataSource = LocalDBDataSource();
+  late LocalDBDataSource _dataSource;
   late StreamSubscription<Map<String, dynamic>> _clipboardSubscription;
 
   @override
   void initState() {
     super.initState();
+    _dataSource = LocalDBDataSource(showFullContentDialog: (String content) {
+      _showFullContentDialog(context, content);
+    });
     // 订阅剪贴板变化事件
     _clipboardSubscription = ClipboardMonitor.onClipboardChanged.listen((data) {
       print(data);
