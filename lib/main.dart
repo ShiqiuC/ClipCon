@@ -1,5 +1,5 @@
 import 'package:clip_con/utils/clipboard_utils.dart';
-import 'package:clip_con/widgets/clipboard_table.dart';
+import 'package:clip_con/widgets/local_clipboard_table.dart';
 import 'package:flutter/material.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:window_manager/window_manager.dart';
@@ -113,7 +113,7 @@ class _MyHomePageState extends State<MyHomePage> {
         index: currentPageIndex,
         children: const <Widget>[
           /// Home page
-          ClipboardTable(),
+          LocalClipboardTable(),
 
           /// Notifications page
           Text("Notifications"),

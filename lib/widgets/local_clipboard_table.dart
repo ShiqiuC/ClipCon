@@ -5,11 +5,11 @@ import 'package:clip_con/utils/local_db_utils.dart';
 import 'package:clip_con/utils/snack_bar_utils.dart';
 import 'package:flutter/material.dart';
 
-class ClipboardTable extends StatefulWidget {
-  const ClipboardTable({super.key});
+class LocalClipboardTable extends StatefulWidget {
+  const LocalClipboardTable({super.key});
 
   @override
-  State<ClipboardTable> createState() => _ClipboardTableState();
+  State<LocalClipboardTable> createState() => _LocalClipboardTableState();
 }
 
 void _showFullContentDialog(BuildContext context, String content) {
@@ -133,7 +133,7 @@ class LocalDBDataSource extends DataTableSource {
   int get selectedRowCount => 0;
 }
 
-class _ClipboardTableState extends State<ClipboardTable> {
+class _LocalClipboardTableState extends State<LocalClipboardTable> {
   final int _rowsPerPage = 10;
   late LocalDBDataSource _dataSource;
   late StreamSubscription<Map<String, dynamic>> _clipboardSubscription;
