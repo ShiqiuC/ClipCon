@@ -1,12 +1,16 @@
 import 'package:clip_con/utils/clipboard_utils.dart';
+import 'package:clip_con/widgets/cloud_clipboard_table.dart';
 import 'package:clip_con/widgets/local_clipboard_table.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:window_manager/window_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
+
+  await dotenv.load();
 
   WindowOptions windowOptions = const WindowOptions(
       size: Size(800, 710),
@@ -116,7 +120,7 @@ class _MyHomePageState extends State<MyHomePage> {
           LocalClipboardTable(),
 
           /// Notifications page
-          Text("Notifications"),
+          CloudClipboardTable(),
 
           /// Messages page
           Text("Messages"),

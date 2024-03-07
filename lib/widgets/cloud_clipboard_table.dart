@@ -1,19 +1,19 @@
 import 'dart:async';
 
 import 'package:clip_con/utils/clipboard_utils.dart';
-import 'package:clip_con/utils/local_db_utils.dart';
+import 'package:clip_con/utils/cloud_api_utils.dart';
 import 'package:clip_con/utils/message_utils.dart';
 import 'package:flutter/material.dart';
 
-class LocalClipboardTable extends StatefulWidget {
-  const LocalClipboardTable({super.key});
+class CloudClipboardTable extends StatefulWidget {
+  const CloudClipboardTable({super.key});
 
   @override
-  State<LocalClipboardTable> createState() => _LocalClipboardTableState();
+  State<CloudClipboardTable> createState() => _CloudClipboardTableState();
 }
 
-class LocalDBDataSource extends DataTableSource {
-  final LocalDBUtils _dbUtils = LocalDBUtils.instance;
+class CloudDBDataSource extends DataTableSource {
+  CloudAPIUtils cloudAPIUtils = CloudAPIUtils();
   List<Map<String, dynamic>> _data = [];
   int _rowCount = 0;
   final int _pageSize = 10;
@@ -22,21 +22,20 @@ class LocalDBDataSource extends DataTableSource {
   final void Function(String content) showFullContentDialog;
   final void Function(String successContent) showSuccessSnackBar;
 
-  LocalDBDataSource(
+  CloudDBDataSource(
       {required this.showFullContentDialog,
       required this.showSuccessSnackBar}) {
     _fetchRowCount();
   }
 
   Future<void> _fetchRowCount() async {
-    _rowCount = await _dbUtils.getTotalRowCount();
-    // 不需要在这里调用 loadData，因为初始页将由 PaginatedDataTable 控制
+    _rowCount = await cloudAPIUtils.fetchTotalClipboardItems();
     notifyListeners();
   }
 
   Future<void> loadData(int page) async {
     _offset = (page - 1) * _pageSize;
-    _data = await _dbUtils.getPaginatedData(page, _pageSize);
+    _data = await cloudAPIUtils.getPaginatedData(page, _pageSize);
     notifyListeners();
   }
 
@@ -64,17 +63,17 @@ class LocalDBDataSource extends DataTableSource {
     return DataRow.byIndex(index: index, cells: [
       DataCell(SizedBox(
         width: _width * 0.20,
-        child: Text(item[LocalDBUtils.columnTime]),
+        child: Text(item[CloudAPIUtils.columnTime]),
       )),
       DataCell(SizedBox(
         width: _width * 0.45,
         child: Tooltip(
-            message: item[LocalDBUtils.columnContent],
+            message: item[CloudAPIUtils.columnContent],
             child: InkWell(
               onTap: () =>
-                  showFullContentDialog(item[LocalDBUtils.columnContent]),
+                  showFullContentDialog(item[CloudAPIUtils.columnContent]),
               child: Text(
-                item[LocalDBUtils.columnContent],
+                item[CloudAPIUtils.columnContent],
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,
               ),
@@ -84,7 +83,7 @@ class LocalDBDataSource extends DataTableSource {
           width: _width * 0.1,
           child: TextButton(
             onPressed: () async {
-              await setClipboardData(item[LocalDBUtils.columnContent]);
+              await setClipboardData(item[CloudAPIUtils.columnContent]);
               showSuccessSnackBar("Copied to clipboard");
             },
             child: const Row(
@@ -108,15 +107,15 @@ class LocalDBDataSource extends DataTableSource {
   int get selectedRowCount => 0;
 }
 
-class _LocalClipboardTableState extends State<LocalClipboardTable> {
+class _CloudClipboardTableState extends State<CloudClipboardTable> {
   final int _rowsPerPage = 10;
-  late LocalDBDataSource _dataSource;
+  late CloudDBDataSource _dataSource;
   late StreamSubscription<Map<String, dynamic>> _clipboardSubscription;
 
   @override
   void initState() {
     super.initState();
-    _dataSource = LocalDBDataSource(
+    _dataSource = CloudDBDataSource(
       showFullContentDialog: (String content) {
         showFullContentDialog(context, content);
       },
@@ -124,10 +123,6 @@ class _LocalClipboardTableState extends State<LocalClipboardTable> {
         showSuccessSnackBar(context, successContent, 2);
       },
     );
-    // 订阅剪贴板变化事件
-    _clipboardSubscription = ClipboardMonitor.onClipboardChanged.listen((data) {
-      _dataSource.addNewSingleData(data);
-    });
     _dataSource.loadData(1);
   }
 

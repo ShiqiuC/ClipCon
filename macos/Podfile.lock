@@ -1,7 +1,7 @@
 PODS:
   - FlutterMacOS (1.0.0)
   - HotKey (0.2.0)
-  - hotkey_manager (0.0.1):
+  - hotkey_manager_macos (0.0.1):
     - FlutterMacOS
     - HotKey
   - screen_retriever (0.0.1):
@@ -14,7 +14,7 @@ PODS:
 
 DEPENDENCIES:
   - FlutterMacOS (from `Flutter/ephemeral`)
-  - hotkey_manager (from `Flutter/ephemeral/.symlinks/plugins/hotkey_manager/macos`)
+  - hotkey_manager_macos (from `Flutter/ephemeral/.symlinks/plugins/hotkey_manager_macos/macos`)
   - screen_retriever (from `Flutter/ephemeral/.symlinks/plugins/screen_retriever/macos`)
   - sqflite (from `Flutter/ephemeral/.symlinks/plugins/sqflite/darwin`)
   - window_manager (from `Flutter/ephemeral/.symlinks/plugins/window_manager/macos`)
@@ -26,8 +26,8 @@ SPEC REPOS:
 EXTERNAL SOURCES:
   FlutterMacOS:
     :path: Flutter/ephemeral
-  hotkey_manager:
-    :path: Flutter/ephemeral/.symlinks/plugins/hotkey_manager/macos
+  hotkey_manager_macos:
+    :path: Flutter/ephemeral/.symlinks/plugins/hotkey_manager_macos/macos
   screen_retriever:
     :path: Flutter/ephemeral/.symlinks/plugins/screen_retriever/macos
   sqflite:
@@ -38,7 +38,7 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   FlutterMacOS: 8f6f14fa908a6fb3fba0cd85dbd81ec4b251fb24
   HotKey: e96d8a2ddbf4591131e2bb3f54e69554d90cdca6
-  hotkey_manager: c32bf0bfe8f934b7bc17ab4ad5c4c142960b023c
+  hotkey_manager_macos: 1e2edb0c7ae4fe67108af44a9d3445de41404160
   screen_retriever: 59634572a57080243dd1bf715e55b6c54f241a38
   sqflite: 673a0e54cc04b7d6dba8d24fb8095b31c3a99eec
   window_manager: 3a1844359a6295ab1e47659b1a777e36773cd6e8
