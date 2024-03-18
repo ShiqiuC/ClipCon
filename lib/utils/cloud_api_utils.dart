@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
@@ -23,7 +24,6 @@ class CloudAPIUtils {
       }
     } catch (e) {
       // Handle exceptions from the http call
-      print(e.toString());
       throw Exception('Failed to fetch data');
     }
   }
@@ -49,8 +49,39 @@ class CloudAPIUtils {
       }
     } catch (e) {
       // Handle exceptions from the HTTP call
-      print(e.toString());
       throw Exception('Failed to fetch paginated data');
     }
+  }
+
+  Future<void> postClipboardItem(String text) async {
+    final url = Uri.parse('${dotenv.env['BASE_URL']}/api/v1/clipboard');
+    try {
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: json.encode({'content': text}),
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = json.decode(response.body);
+        CloudMonitor._cloudChangeController.add(responseData);
+      } else {
+        throw Exception('Failed to post clipboard text');
+      }
+    } catch (e) {
+      throw Exception('Failed to post clipboard text');
+    }
+  }
+}
+
+class CloudMonitor {
+  static final _cloudChangeController =
+      StreamController<Map<String, dynamic>>.broadcast();
+
+  static Stream<Map<String, dynamic>> get onCloudChanged =>
+      _cloudChangeController.stream;
+
+  static void dispose() {
+    _cloudChangeController.close();
   }
 }

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:clip_con/utils/clipboard_utils.dart';
+import 'package:clip_con/utils/cloud_api_utils.dart';
 import 'package:clip_con/utils/local_db_utils.dart';
 import 'package:clip_con/utils/message_utils.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +14,7 @@ class LocalClipboardTable extends StatefulWidget {
 }
 
 class LocalDBDataSource extends DataTableSource {
+  CloudAPIUtils cloudAPIUtils = CloudAPIUtils();
   final LocalDBUtils _dbUtils = LocalDBUtils.instance;
   List<Map<String, dynamic>> _data = [];
   int _rowCount = 0;
@@ -67,33 +69,48 @@ class LocalDBDataSource extends DataTableSource {
         child: Text(item[LocalDBUtils.columnTime]),
       )),
       DataCell(SizedBox(
-        width: _width * 0.45,
-        child: Tooltip(
-            message: item[LocalDBUtils.columnContent],
-            child: InkWell(
-              onTap: () =>
-                  showFullContentDialog(item[LocalDBUtils.columnContent]),
-              child: Text(
-                item[LocalDBUtils.columnContent],
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-              ),
-            )),
+        width: _width * 0.40,
+        child: InkWell(
+          onTap: () => showFullContentDialog(item[LocalDBUtils.columnContent]),
+          child: Text(
+            item[LocalDBUtils.columnContent],
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+          ),
+        ),
       )),
       DataCell(SizedBox(
-          width: _width * 0.1,
-          child: TextButton(
-            onPressed: () async {
-              await setClipboardData(item[LocalDBUtils.columnContent]);
-              showSuccessSnackBar("Copied to clipboard");
-            },
-            child: const Row(
-              children: <Widget>[
-                Icon(Icons.content_copy, size: 16.0), // 添加图标，设置合适的大小
-                SizedBox(width: 4.0), // 在图标和文本之间添加一些间距
-                Text('Copy'), // 按钮文本
-              ],
-            ),
+          width: _width * 0.25,
+          child: Row(
+            children: [
+              TextButton(
+                onPressed: () async {
+                  await setClipboardData(item[LocalDBUtils.columnContent]);
+                  showSuccessSnackBar("Copied to clipboard");
+                },
+                child: const Row(
+                  children: <Widget>[
+                    Icon(Icons.content_copy, size: 16.0), // 添加图标，设置合适的大小
+                    SizedBox(width: 4.0), // 在图标和文本之间添加一些间距
+                    Text('Copy'), // 按钮文本
+                  ],
+                ),
+              ),
+              TextButton(
+                onPressed: () async {
+                  await cloudAPIUtils
+                      .postClipboardItem(item[LocalDBUtils.columnContent]);
+                  showSuccessSnackBar("Uploaded to cloud");
+                },
+                child: const Row(
+                  children: <Widget>[
+                    Icon(Icons.upload, size: 16.0), // 添加图标，设置合适的大小
+                    SizedBox(width: 4.0), // 在图标和文本之间添加一些间距
+                    Text('Upload'), // 按钮文本
+                  ],
+                ),
+              )
+            ],
           )))
     ]);
   }

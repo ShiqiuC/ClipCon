@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:clip_con/utils/clipboard_utils.dart';
 import 'package:clip_con/utils/cloud_api_utils.dart';
 import 'package:clip_con/utils/message_utils.dart';
+import 'package:clip_con/utils/utils.dart';
 import 'package:flutter/material.dart';
 
 class CloudClipboardTable extends StatefulWidget {
@@ -63,21 +64,18 @@ class CloudDBDataSource extends DataTableSource {
     return DataRow.byIndex(index: index, cells: [
       DataCell(SizedBox(
         width: _width * 0.20,
-        child: Text(item[CloudAPIUtils.columnTime]),
+        child: Text(convertIsoDateTimeToLocal(item[CloudAPIUtils.columnTime])),
       )),
       DataCell(SizedBox(
         width: _width * 0.45,
-        child: Tooltip(
-            message: item[CloudAPIUtils.columnContent],
-            child: InkWell(
-              onTap: () =>
-                  showFullContentDialog(item[CloudAPIUtils.columnContent]),
-              child: Text(
-                item[CloudAPIUtils.columnContent],
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-              ),
-            )),
+        child: InkWell(
+          onTap: () => showFullContentDialog(item[CloudAPIUtils.columnContent]),
+          child: Text(
+            item[CloudAPIUtils.columnContent],
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+          ),
+        ),
       )),
       DataCell(SizedBox(
           width: _width * 0.1,
@@ -110,7 +108,7 @@ class CloudDBDataSource extends DataTableSource {
 class _CloudClipboardTableState extends State<CloudClipboardTable> {
   final int _rowsPerPage = 10;
   late CloudDBDataSource _dataSource;
-  late StreamSubscription<Map<String, dynamic>> _clipboardSubscription;
+  late StreamSubscription<Map<String, dynamic>> _cloudSubscription;
 
   @override
   void initState() {
@@ -123,13 +121,16 @@ class _CloudClipboardTableState extends State<CloudClipboardTable> {
         showSuccessSnackBar(context, successContent, 2);
       },
     );
+    _cloudSubscription = CloudMonitor.onCloudChanged.listen((data) {
+      _dataSource.addNewSingleData(data);
+    });
     _dataSource.loadData(1);
   }
 
   @override
   void dispose() {
     // 取消订阅，避免内存泄漏
-    _clipboardSubscription.cancel();
+    _cloudSubscription.cancel();
     super.dispose();
   }
 
